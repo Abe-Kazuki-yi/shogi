@@ -24,4 +24,5 @@ public class ListController {
 	public List<ShogiList> getListsByTemplateId(@PathVariable int templateId) {
 	    return listRepository.findByTemplateId(templateId);
 	}
+	
 }

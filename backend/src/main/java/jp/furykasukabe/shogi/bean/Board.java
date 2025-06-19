@@ -1,5 +1,6 @@
 package jp.furykasukabe.shogi.bean;
 
+import java.io.Serializable;
 import java.util.Map;
 
 import jp.furykasukabe.shogi.entity.Piece;
@@ -8,7 +9,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class Board {
+public class Board implements Serializable{
 	private Piece[][] myFormation;
 	private Piece[][] opponentFormation;
 	private Map<Piece, Integer> myHand;
