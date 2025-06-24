@@ -26,6 +26,8 @@ export function useBoard() {
   const board = ref({
     myFormation: createEmptyBoard(),
     opponentFormation: createEmptyBoard(),
+    myHand: new Map<Piece, number>(),
+    opponentHand: new Map<Piece, number>(),
   })
 
   const lists = ref<Move[]>([])
@@ -35,6 +37,8 @@ export function useBoard() {
     const response = await axios.get(url)
     board.value.myFormation = response.data.myFormation
     board.value.opponentFormation = response.data.opponentFormation
+    board.value.myHand = response.data.myHand
+    board.value.opponentHand = response.data.opponentHand
   }
 
   const getLists = async () => {
@@ -43,8 +47,22 @@ export function useBoard() {
     lists.value = response.data
   }
 
-  onMounted(getInitial)
-  onMounted(getLists)
+  onMounted(async () => {
+    await getInitial()
+    await getLists()
+  })
+
+  const getNextBoard = async () => {
+    const url = 'http://localhost:8080/board/next/me'
+    const response = await axios.post(
+      url,
+      lists.value.find((m) => m.id === 1),
+    )
+    board.value.myFormation = response.data.myFormation
+    board.value.opponentFormation = response.data.opponentFormation
+    board.value.myHand = response.data.myHand
+    board.value.opponentHand = response.data.opponentHand
+  }
 
   const highlightMap = computed(() => {
     const map = new Map<string, string>()
@@ -61,5 +79,6 @@ export function useBoard() {
     board,
     lists,
     highlightMap,
+    getNextBoard,
   }
 }
