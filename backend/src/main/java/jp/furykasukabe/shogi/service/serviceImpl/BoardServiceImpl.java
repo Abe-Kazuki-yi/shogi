@@ -6,9 +6,9 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import jp.furykasukabe.shogi.bean.Board;
-import jp.furykasukabe.shogi.bean.MoveRequest;
+import jp.furykasukabe.shogi.bean.Piece;
 import jp.furykasukabe.shogi.bean.Square;
-import jp.furykasukabe.shogi.entity.Piece;
+import jp.furykasukabe.shogi.dto.MoveRequest;
 import jp.furykasukabe.shogi.service.BoardService;
 
 @Service
@@ -73,7 +73,7 @@ public class BoardServiceImpl implements BoardService {
 	
 	
 	@Override
-	public Board advanceOneStep(Board board, MoveRequest moveRequest, boolean isPromoted) {
+	public Board advanceOneStep(Board board, MoveRequest moveRequest) {
 		Board nextBoard = board;
 		Piece[][] currentMyFormation = board.getMyFormation();
 		Piece[][] currentOpponentFormation = board.getOpponentFormation();
@@ -87,9 +87,6 @@ public class BoardServiceImpl implements BoardService {
 			currentMyFormation[targetX][targetY] = board.getMyFormation()[beforeX][beforeY];
 			currentMyFormation[beforeX][beforeY] = null;
 			
-			if(isPromoted) {
-				currentMyFormation[targetX][targetY].setPromoted(isPromoted);
-			}
 			
 			nextBoard.setMyFormation(currentMyFormation);
 			
@@ -103,6 +100,11 @@ public class BoardServiceImpl implements BoardService {
 		return nextBoard;
 	}
 
+	@Override
+	public boolean isPromotable(Board board, MoveRequest moverequest) {
+		return false;
+	}
+	
 	private List<Square> king(Board board, Square square) {
 		List<Square> lists = new ArrayList<>();
 		for (int x = square.getX() - 1; x < square.getX() + 2; x++) {

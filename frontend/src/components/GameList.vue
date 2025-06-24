@@ -40,7 +40,7 @@ onMounted(() => getListsWithNum(numStore.num))
     <ul>
       <li v-for="list in lists" :key="list.id">
         {{ list.targetX }}{{ list.targetY
-        }}{{ boardStore.myFormation[list.beforeX]?.[list.beforeY]?.name
+        }}{{ boardStore.myFormation[list.beforeX]?.[list.beforeY]?.displayName
         }}{{ list.isPromoted ? '成' : '' }}
       </li>
     </ul>

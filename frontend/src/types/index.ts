@@ -1,7 +1,6 @@
 export interface Piece {
   id: number
-  name: string
-  promoted: string | null
+  displayName: string
 }
 
 export interface Move {

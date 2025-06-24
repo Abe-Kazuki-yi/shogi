@@ -3,9 +3,7 @@ import type { Square } from '@/types/Square'
 
 interface Piece {
   id: number
-  name: string
-  promotedName: string
-  promoted: boolean
+  displayName: string
 }
 
 interface Board {

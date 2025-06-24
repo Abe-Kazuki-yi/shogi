@@ -7,7 +7,8 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 
 import jp.furykasukabe.shogi.bean.Board;
-import jp.furykasukabe.shogi.entity.Piece;
+import jp.furykasukabe.shogi.bean.Piece;
+import jp.furykasukabe.shogi.entity.PieceInfo;
 import jp.furykasukabe.shogi.entity.ShogiList;
 import jp.furykasukabe.shogi.factory.BoardFactory;
 import jp.furykasukabe.shogi.service.PieceService;
@@ -21,13 +22,13 @@ public class BoardFactoryImpl implements BoardFactory {
 
 	@Override
 	public Board createInitialBoard(boolean isPlay) {
-		List<Piece> pieces = pieceService.findAllPieces();
+		List<PieceInfo> pieces = pieceService.findAllPieces();
 		Piece[][] myFormation = new Piece[10][10];
 		Piece[][] opponentFormation = new Piece[10][10];
 		Map<String, Integer> myHand = new HashMap<>();           // ← OK（変更可能）
 		Map<String, Integer> opponentHand = new HashMap<>();
 
-		for (Piece piece : pieces) {
+		for (PieceInfo piece : pieces) {
 		    switch (piece.getId()) {
 		        case 1:
 		            myFormation[5][9] = new Piece(piece);

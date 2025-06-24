@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "pieces", schema = "public")
 @Data
 @NoArgsConstructor
-public class Piece {
+public class PieceInfo {
 	
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,12 +24,4 @@ public class Piece {
 	@Column(name = "promotedName")
 	private String promotedName;
 	
-	private boolean promoted;
-	
-    public Piece(Piece other) {
-        this.id = other.id;
-        this.name = other.name;
-        this.promoted = other.promoted;
-        this.promotedName = other.promotedName;
-    }
 }

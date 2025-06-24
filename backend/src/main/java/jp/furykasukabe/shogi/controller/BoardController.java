@@ -1,6 +1,5 @@
 package jp.furykasukabe.shogi.controller;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -13,8 +12,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpSession;
 import jp.furykasukabe.shogi.bean.Board;
-import jp.furykasukabe.shogi.bean.MoveRequest;
 import jp.furykasukabe.shogi.bean.Square;
+import jp.furykasukabe.shogi.dto.MoveRequest;
+import jp.furykasukabe.shogi.dto.MoveResponse;
 import jp.furykasukabe.shogi.entity.ShogiList;
 import jp.furykasukabe.shogi.factory.BoardFactory;
 import jp.furykasukabe.shogi.service.BoardService;
@@ -32,15 +32,12 @@ public class BoardController {
 	public Board first(@PathVariable boolean isPlay, HttpSession session) {
 		Board initialBoard = boardFactory.createInitialBoard(isPlay);
 	    session.setAttribute("boardState", initialBoard);
-	    //System.out.println("Session ID: " + session.getId());
 	    return initialBoard;
 	}
 	
 	@PostMapping("/next/{player}")
 	public Board next(@RequestBody ShogiList shogiList, @PathVariable String player, HttpSession session) {
 		Board currentBoard = (Board) session.getAttribute("boardState");
-		//System.out.println("currentBoardは"+currentBoard+"です");
-		//System.out.println("Session ID: " + session.getId());
 	    Board nextBoard = boardFactory.createNextBoard(currentBoard, shogiList);
 	    session.setAttribute("boardState", nextBoard);
 	    return nextBoard;
@@ -58,13 +55,12 @@ public class BoardController {
 		return boardService.findMovableSquare(currentBoard, square);
 	}
 	
-	@PostMapping("/move/{isPromoted}")
-	public Board move(@RequestBody MoveRequest requestBody, @PathVariable boolean isPromoted, HttpSession session) {
-		Board currentBoard = (Board) session.getAttribute("boardState");
-	    System.out.println("from: " + Arrays.toString(requestBody.getFrom()));
-	    System.out.println("to: " + Arrays.toString(requestBody.getTo()));
-	    Board nextBoard = boardService.advanceOneStep(currentBoard, requestBody, isPromoted);
+	@PostMapping("/move")
+	public MoveResponse move(@RequestBody MoveRequest requestBody, HttpSession session) {
+	    Board currentBoard = (Board) session.getAttribute("boardState");
+	    boolean promotable = boardService.isPromotable(currentBoard, requestBody);
+	    Board nextBoard = boardService.advanceOneStep(currentBoard, requestBody);
 	    session.setAttribute("boardState", nextBoard);
-	    return nextBoard;
+	    return new MoveResponse(nextBoard, promotable);
 	}
 }

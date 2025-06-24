@@ -10,6 +10,7 @@ const isFirst = route.query.isFirst === 'true'
 const boardStore = useBoardStore()
 const numStore = useNumStore()
 const boardRef = ref<HTMLElement | null>(null)
+const promotionPending = ref(false)
 
 /*初期盤面を作成します。onMountedです*/
 const getInitialBoard = async () => {
@@ -38,22 +39,9 @@ const isBeforeSquare = (x: number, y: number): boolean =>
 const isTargetSquare = (x: number, y: number): boolean =>
   boardStore.targetSquares.some((sq) => sq.x === x && sq.y === y)
 
-const showModal = ref(false)
-let resolveFn: ((value: boolean) => void) | null = null
-
-function choose(): Promise<boolean> {
-  return new Promise((resolve) => {
-    showModal.value = true
-    resolveFn = resolve
-  })
-}
-
-function onChooseResult(result: boolean) {
-  showModal.value = false
-  if (resolveFn) {
-    resolveFn(result)
-    resolveFn = null
-  }
+const handlePromotion = (promote: boolean) => {
+  //処理が未定義
+  return promote
 }
 
 /*マス目をクリックしたとき①初回なら選択状態にする。②どこかが選択済みなら移動可能か調べて、動かすor選択を解除 半分ChatGPT産*/
@@ -75,15 +63,7 @@ const handleClickCell = async (x: number, y: number) => {
     if (isMovable) {
       const from = [boardStore.selectedSquare.x, boardStore.selectedSquare.y]
       const to = [x, y]
-
-      let flag = false
-
-      //成りの判断
-      if (!boardStore.myFormation[from[0]][from[1]]?.promoted && (from[1] <= 3 || to[1] <= 3)) {
-        flag = await choose()
-      }
-
-      const res = await axios.post('http://localhost:8080/board/move/' + flag, {
+      const res = await axios.post('http://localhost:8080/board/move', {
         from,
         to,
       })
@@ -91,7 +71,12 @@ const handleClickCell = async (x: number, y: number) => {
       boardStore.setSelectedSquare(null)
       boardStore.setMovableSquare([])
 
-      boardStore.setBoardData(res.data)
+      boardStore.setBoardData(res.data.board)
+
+      if (res.data.promotable) {
+        //駒が成れるときの処理
+        promotionPending.value = true
+      }
       numStore.addNum()
     } else {
       boardStore.setSelectedSquare(null)
@@ -118,8 +103,8 @@ const handleClickOutside = (event: MouseEvent) => {
   }
 }
 
-function getFontClass(piece: { name?: string; promotedName?: string; promoted?: boolean }) {
-  const text = piece.promoted ? (piece.promotedName ?? '') : (piece.name ?? '')
+function getFontClass(piece?: { displayName?: string }) {
+  const text = piece?.displayName ?? ''
   if (text.length === 1) return 'one-char'
   if (text.length === 2) return 'two-char'
   return 'three-char'
@@ -162,20 +147,12 @@ onBeforeUnmount(() => {
       >
         <template v-if="boardStore.opponentFormation[x]?.[y]">
           <span class="piece rotated" :class="getFontClass(boardStore.opponentFormation[x][y])">
-            {{
-              boardStore.opponentFormation[x][y]?.promoted
-                ? boardStore.opponentFormation[x][y]?.promotedName
-                : boardStore.opponentFormation[x][y]?.name
-            }}
+            {{ boardStore.opponentFormation[x][y].displayName }}
           </span>
         </template>
         <template v-else-if="boardStore.myFormation[x]?.[y]">
           <span class="piece" :class="getFontClass(boardStore.myFormation[x][y])">
-            {{
-              boardStore.myFormation[x][y]?.promoted
-                ? boardStore.myFormation[x][y]?.promotedName
-                : boardStore.myFormation[x][y]?.name
-            }}
+            {{ boardStore.myFormation[x][y].displayName }}
           </span>
         </template>
       </td>
@@ -188,13 +165,11 @@ onBeforeUnmount(() => {
     </span>
   </div>
 
-  <div v-if="showModal" class="modal">
-    <p>成りますか？</p>
-    <button @click="onChooseResult(true)">成る</button>
-    <button @click="onChooseResult(false)">成らない</button>
+  <div v-if="promotionPending" class="promotion-dialog">
+    <button @click="handlePromotion(true)">成る</button>
+    <button @click="handlePromotion(false)">成らない</button>
   </div>
 </template>
-
 <style scoped>
 table {
   border-collapse: collapse;

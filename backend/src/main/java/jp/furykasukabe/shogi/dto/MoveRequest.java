@@ -1,4 +1,4 @@
-package jp.furykasukabe.shogi.bean;
+package jp.furykasukabe.shogi.dto;
 
 import lombok.Data;
 
