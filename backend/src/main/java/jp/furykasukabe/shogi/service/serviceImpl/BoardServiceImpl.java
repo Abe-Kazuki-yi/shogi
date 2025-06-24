@@ -6,7 +6,9 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import jp.furykasukabe.shogi.bean.Board;
+import jp.furykasukabe.shogi.bean.MoveRequest;
 import jp.furykasukabe.shogi.bean.Square;
+import jp.furykasukabe.shogi.entity.Piece;
 import jp.furykasukabe.shogi.service.BoardService;
 
 @Service
@@ -67,6 +69,38 @@ public class BoardServiceImpl implements BoardService {
 
 		}
 		return lists;
+	}
+	
+	
+	@Override
+	public Board advanceOneStep(Board board, MoveRequest moveRequest, boolean isPromoted) {
+		Board nextBoard = board;
+		Piece[][] currentMyFormation = board.getMyFormation();
+		Piece[][] currentOpponentFormation = board.getOpponentFormation();
+		
+		int beforeX = moveRequest.getFrom()[0];
+		int beforeY = moveRequest.getFrom()[1];
+		int targetX = moveRequest.getTo()[0];
+		int targetY = moveRequest.getTo()[1];
+		
+		if(currentMyFormation[beforeX][beforeY] != null) {
+			currentMyFormation[targetX][targetY] = board.getMyFormation()[beforeX][beforeY];
+			currentMyFormation[beforeX][beforeY] = null;
+			
+			if(isPromoted) {
+				currentMyFormation[targetX][targetY].setPromoted(isPromoted);
+			}
+			
+			nextBoard.setMyFormation(currentMyFormation);
+			
+			if(currentOpponentFormation[targetX][targetY] != null) {
+				board.addMyHand(currentOpponentFormation[targetX][targetY].getName());
+				currentOpponentFormation[targetX][targetY] = null;
+				nextBoard.setOpponentFormation(currentOpponentFormation);
+				nextBoard.setMyHand(board.getMyHand());
+			}
+		}
+		return nextBoard;
 	}
 
 	private List<Square> king(Board board, Square square) {
@@ -282,8 +316,8 @@ public class BoardServiceImpl implements BoardService {
 		if (isExist(x, y) && board.getMyFormation()[x][y] == null)
 			lists.add(new Square(x, y));
 
-		x = square.getX() + 1;
-		y = square.getY() - 1;
+		x = square.getX() - 1;
+		y = square.getY() + 1;
 		if (isExist(x, y) && board.getMyFormation()[x][y] == null)
 			lists.add(new Square(x, y));
 

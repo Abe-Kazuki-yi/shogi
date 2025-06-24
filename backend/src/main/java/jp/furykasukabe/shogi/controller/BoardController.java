@@ -58,10 +58,13 @@ public class BoardController {
 		return boardService.findMovableSquare(currentBoard, square);
 	}
 	
-	@PostMapping("/move")
-	public Board move(@RequestBody MoveRequest requestBody) {
+	@PostMapping("/move/{isPromoted}")
+	public Board move(@RequestBody MoveRequest requestBody, @PathVariable boolean isPromoted, HttpSession session) {
+		Board currentBoard = (Board) session.getAttribute("boardState");
 	    System.out.println("from: " + Arrays.toString(requestBody.getFrom()));
 	    System.out.println("to: " + Arrays.toString(requestBody.getTo()));
-	    return null;
+	    Board nextBoard = boardService.advanceOneStep(currentBoard, requestBody, isPromoted);
+	    session.setAttribute("boardState", nextBoard);
+	    return nextBoard;
 	}
 }

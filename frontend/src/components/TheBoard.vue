@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useBoardStore } from '@/stores/useBoardStore'
+import { useNumStore } from '@/stores/useNumStore'
 import axios from 'axios'
 import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
@@ -7,6 +8,7 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 const isFirst = route.query.isFirst === 'true'
 const boardStore = useBoardStore()
+const numStore = useNumStore()
 const boardRef = ref<HTMLElement | null>(null)
 
 /*初期盤面を作成します。onMountedです*/
@@ -36,6 +38,24 @@ const isBeforeSquare = (x: number, y: number): boolean =>
 const isTargetSquare = (x: number, y: number): boolean =>
   boardStore.targetSquares.some((sq) => sq.x === x && sq.y === y)
 
+const showModal = ref(false)
+let resolveFn: ((value: boolean) => void) | null = null
+
+function choose(): Promise<boolean> {
+  return new Promise((resolve) => {
+    showModal.value = true
+    resolveFn = resolve
+  })
+}
+
+function onChooseResult(result: boolean) {
+  showModal.value = false
+  if (resolveFn) {
+    resolveFn(result)
+    resolveFn = null
+  }
+}
+
 /*マス目をクリックしたとき①初回なら選択状態にする。②どこかが選択済みなら移動可能か調べて、動かすor選択を解除 半分ChatGPT産*/
 const handleClickCell = async (x: number, y: number) => {
   if (!boardStore.selectedSquare) {
@@ -55,12 +75,24 @@ const handleClickCell = async (x: number, y: number) => {
     if (isMovable) {
       const from = [boardStore.selectedSquare.x, boardStore.selectedSquare.y]
       const to = [x, y]
-      await axios.post('http://localhost:8080/board/move', {
+
+      let flag = false
+
+      //成りの判断
+      if (!boardStore.myFormation[from[0]][from[1]]?.promoted && (from[1] <= 3 || to[1] <= 3)) {
+        flag = await choose()
+      }
+
+      const res = await axios.post('http://localhost:8080/board/move/' + flag, {
         from,
         to,
       })
+
       boardStore.setSelectedSquare(null)
       boardStore.setMovableSquare([])
+
+      boardStore.setBoardData(res.data)
+      numStore.addNum()
     } else {
       boardStore.setSelectedSquare(null)
       boardStore.setMovableSquare([])
@@ -84,6 +116,13 @@ const handleClickOutside = (event: MouseEvent) => {
     boardStore.setSelectedSquare(null)
     boardStore.setMovableSquare([])
   }
+}
+
+function getFontClass(piece: { name?: string; promotedName?: string; promoted?: boolean }) {
+  const text = piece.promoted ? (piece.promotedName ?? '') : (piece.name ?? '')
+  if (text.length === 1) return 'one-char'
+  if (text.length === 2) return 'two-char'
+  return 'three-char'
 }
 
 onMounted(() => {
@@ -122,7 +161,7 @@ onBeforeUnmount(() => {
         @click="handleClickCell(x, y)"
       >
         <template v-if="boardStore.opponentFormation[x]?.[y]">
-          <span class="rotated">
+          <span class="piece rotated" :class="getFontClass(boardStore.opponentFormation[x][y])">
             {{
               boardStore.opponentFormation[x][y]?.promoted
                 ? boardStore.opponentFormation[x][y]?.promotedName
@@ -131,11 +170,13 @@ onBeforeUnmount(() => {
           </span>
         </template>
         <template v-else-if="boardStore.myFormation[x]?.[y]">
-          {{
-            boardStore.myFormation[x][y]?.promoted
-              ? boardStore.myFormation[x][y]?.promotedName
-              : boardStore.myFormation[x][y]?.name
-          }}
+          <span class="piece" :class="getFontClass(boardStore.myFormation[x][y])">
+            {{
+              boardStore.myFormation[x][y]?.promoted
+                ? boardStore.myFormation[x][y]?.promotedName
+                : boardStore.myFormation[x][y]?.name
+            }}
+          </span>
         </template>
       </td>
     </tr>
@@ -145,6 +186,12 @@ onBeforeUnmount(() => {
     <span v-for="item in filteredMyHand" :key="item.piece">
       {{ item.piece }} ×{{ item.count }}
     </span>
+  </div>
+
+  <div v-if="showModal" class="modal">
+    <p>成りますか？</p>
+    <button @click="onChooseResult(true)">成る</button>
+    <button @click="onChooseResult(false)">成らない</button>
   </div>
 </template>
 
@@ -198,5 +245,32 @@ table {
 }
 .movable-border {
   border: 3px solid #8f18f8; /* 紫など目立つ色に */
+}
+.piece {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  text-align: center;
+  line-height: 24px;
+  font-size: 20px;
+  font-family: 'serif';
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.one-char {
+  font-size: 24px;
+}
+
+.two-char {
+  font-size: 12px;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+}
+
+.three-char {
+  font-size: 8px;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
 }
 </style>
