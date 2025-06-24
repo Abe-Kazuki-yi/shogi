@@ -1,5 +1,6 @@
 package jp.furykasukabe.shogi.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -18,5 +19,8 @@ public class Piece {
 	
 	private String name;
 	
-	private String promoted;
+	@Column(name = "promotedName")
+	private String promotedName;
+	
+	private boolean promoted;
 }

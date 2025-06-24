@@ -10,4 +10,6 @@ import jp.furykasukabe.shogi.entity.Template;
 @Repository
 public interface TemplateRepository extends JpaRepository<Template, Integer>{
 	List<Template> findByPlayerIdAndPlayFirst(int playerId, boolean playFirst);
+	
+	List<Template> findByPlayerIdAndPlayFirstAndAvailable(int playerId, boolean playFirst, boolean available);
 }

@@ -19,12 +19,12 @@ public class BoardFactoryImpl implements BoardFactory {
 	private final PieceService pieceService;
 
 	@Override
-	public Board createInitialBoard() {
+	public Board createInitialBoard(boolean isPlay) {
 		List<Piece> pieces = pieceService.findAllPieces();
 		Piece[][] myFormation = new Piece[10][10];
 		Piece[][] opponentFormation = new Piece[10][10];
-		Map<Piece, Integer> myHand = Map.of(); // 空の手駒
-		Map<Piece, Integer> opponentHand = Map.of(); // 空の手駒
+		Map<String, Integer> myHand = Map.of(); // 空の手駒
+		Map<String, Integer> opponentHand = Map.of(); // 空の手駒
 
 		for (Piece piece : pieces) {
 			switch (piece.getId()) {
@@ -66,12 +66,12 @@ public class BoardFactoryImpl implements BoardFactory {
 				break;
 			case 8:
 				for (int i = 1; i < 10; i++) {
-					myFormation[i][7] = piece;
+					//myFormation[i][7] = piece;
 					opponentFormation[i][3] = piece;
 				}
 			}
 		}
-		return new Board(myFormation, opponentFormation, myHand, opponentHand);
+		return new Board(myFormation, opponentFormation, myHand, opponentHand, isPlay);
 	}
 
 	@Override
@@ -89,13 +89,13 @@ public class BoardFactoryImpl implements BoardFactory {
 			
 			if(currentBoard.getOpponentFormation()[shogiList.getTargetX()][shogiList.getTargetY()] != null) {
 				Piece[][] nextOpponentFormation = currentBoard.getOpponentFormation();
-				Piece piece = currentBoard.getOpponentFormation()[shogiList.getTargetX()][shogiList.getTargetY()];
+				String pieceName = currentBoard.getOpponentFormation()[shogiList.getTargetX()][shogiList.getTargetY()].getName();
 				
 				nextOpponentFormation[shogiList.getTargetX()][shogiList.getTargetY()] = null;
 				currentBoard.setOpponentFormation(nextOpponentFormation);
 				
-				Map<Piece, Integer> currentMyHand = currentBoard.getMyHand();
-				currentMyHand.merge(piece, 1, Integer::sum);
+				Map<String, Integer> currentMyHand = currentBoard.getMyHand();
+				currentMyHand.merge(pieceName, 1, Integer::sum);
 				currentBoard.setMyHand(currentMyHand);
 			}
 			nextBoard = currentBoard;

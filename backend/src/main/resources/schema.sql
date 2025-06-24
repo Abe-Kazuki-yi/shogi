@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS kasukabe_shogi_db.public.players (
 CREATE TABLE IF NOT EXISTS kasukabe_shogi_db.public.pieces (
     id       INTEGER PRIMARY KEY,
     name     VARCHAR(2),
-    promoted VARCHAR(2)
+    promoted_name VARCHAR(2),
+    promoted BOOLEAN NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS kasukabe_shogi_db.public.templates (
@@ -21,7 +22,7 @@ CREATE TABLE IF NOT EXISTS kasukabe_shogi_db.public.templates (
     name       VARCHAR(20),
     play_first BOOLEAN NOT NULL,
     available  BOOLEAN NOT NULL,
-    context    VARCHAR(255)
+    content    VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS kasukabe_shogi_db.public.lists (

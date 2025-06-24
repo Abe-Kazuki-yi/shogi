@@ -12,6 +12,7 @@ import lombok.Data;
 public class Board implements Serializable{
 	private Piece[][] myFormation;
 	private Piece[][] opponentFormation;
-	private Map<Piece, Integer> myHand;
-	private Map<Piece, Integer> opponentHand;	
+	private Map<String, Integer> myHand;
+	private Map<String, Integer> opponentHand;
+	private boolean isPlay;
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useTemplateStore } from '@/stores/templateStore'
+import { useTemplateStore } from '@/stores/useTemplateStore'
 import { useGlobalStore } from '@/stores/global'
 import { useBoard } from '@/composables/useBoard'
 

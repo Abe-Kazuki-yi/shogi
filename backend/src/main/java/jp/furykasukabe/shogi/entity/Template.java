@@ -34,5 +34,5 @@ public class Template {
     private boolean available;
     
     @Size(max = 255)
-    private String context;
+    private String content;
 }
