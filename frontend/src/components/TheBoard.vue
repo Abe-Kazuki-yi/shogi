@@ -11,6 +11,8 @@ const boardStore = useBoardStore()
 const numStore = useNumStore()
 const boardRef = ref<HTMLElement | null>(null)
 const promotionPending = ref(false)
+const inputLocked = ref(false)
+const promoteTarget = ref<{ x: number; y: number } | null>(null)
 
 /*初期盤面を作成します。onMountedです*/
 const getInitialBoard = async () => {
@@ -20,17 +22,29 @@ const getInitialBoard = async () => {
 }
 
 /*持ち駒を表示するときに必要です。chatGPT産*/
-const filteredOpponentHand = computed(() =>
-  Object.entries(boardStore.opponentHand)
-    .filter(([, count]) => count > 0)
-    .map(([piece, count]): { piece: string; count: number } => ({ piece, count })),
-)
+const filteredMyHand = computed(() => {
+  const hand = boardStore.myHand
+  if (!Array.isArray(hand)) return []
+  const result = []
+  for (const item of hand) {
+    if (item.count > 0) {
+      result.push(item)
+    }
+  }
+  return result
+})
 
-const filteredMyHand = computed(() =>
-  Object.entries(boardStore.myHand)
-    .filter(([, count]) => count > 0)
-    .map(([piece, count]): { piece: string; count: number } => ({ piece, count })),
-)
+const filteredOpponentHand = computed(() => {
+  const hand = boardStore.opponentHand
+  if (!Array.isArray(hand)) return []
+  const result = []
+  for (const item of hand) {
+    if (item.count > 0) {
+      result.push(item)
+    }
+  }
+  return result
+})
 
 /*GameList.vueで受け取ったテンプレートの手を読み込み、その場所に色を変えるために使います。ChatGPT産*/
 const isBeforeSquare = (x: number, y: number): boolean =>
@@ -39,13 +53,61 @@ const isBeforeSquare = (x: number, y: number): boolean =>
 const isTargetSquare = (x: number, y: number): boolean =>
   boardStore.targetSquares.some((sq) => sq.x === x && sq.y === y)
 
-const handlePromotion = (promote: boolean) => {
-  //処理が未定義
-  return promote
+/*chatGPT産*/
+const handlePromotion = async (promote: boolean) => {
+  try {
+    if (promote && promoteTarget.value) {
+      const res = await axios.post('http://localhost:8080/board/promote', promoteTarget.value)
+      boardStore.setBoardData(res.data)
+    }
+  } catch (err) {
+    console.error('Promotion failed', err)
+  } finally {
+    promotionPending.value = false
+    inputLocked.value = false
+    numStore.addNum()
+  }
 }
 
 /*マス目をクリックしたとき①初回なら選択状態にする。②どこかが選択済みなら移動可能か調べて、動かすor選択を解除 半分ChatGPT産*/
 const handleClickCell = async (x: number, y: number) => {
+  if (inputLocked.value) return
+
+  /*chatGPT産*/
+  if (boardStore.selectedHandPiece) {
+    const res = await axios.get('http://localhost:8080/board/dropable')
+    boardStore.setMovableSquare(res.data)
+    // 盤面に自分の駒があるかチェック
+
+    try {
+      inputLocked.value = true
+      const res = await axios.post('http://localhost:8080/board/drop', {
+        piece: {
+          id: boardStore.selectedHandPiece?.id,
+          displayName: boardStore.selectedHandPiece?.displayName,
+        },
+        square: { x, y },
+      })
+
+      if (res.data.myFormation) {
+        boardStore.setBoardData(res.data)
+        numStore.addNum()
+        boardStore.setSelectedHandPiece(null) // 持ち駒選択解除
+        boardStore.setSelectedSquare(null)
+        boardStore.setMovableSquare([])
+      } else {
+        alert('ここには置けません。')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('駒の配置に失敗しました。')
+    } finally {
+      inputLocked.value = false
+    }
+
+    return
+  }
+
   if (!boardStore.selectedSquare) {
     const url = 'http://localhost:8080/board/select/' + x + '/' + y
     const res1 = await axios.get<boolean>(url)
@@ -68,16 +130,19 @@ const handleClickCell = async (x: number, y: number) => {
         to,
       })
 
-      boardStore.setSelectedSquare(null)
-      boardStore.setMovableSquare([])
-
-      boardStore.setBoardData(res.data.board)
+      boardStore.setBoardData(res.data.boardDTO)
 
       if (res.data.promotable) {
-        //駒が成れるときの処理
         promotionPending.value = true
+        inputLocked.value = true
+        promoteTarget.value = { x, y }
+        boardStore.setSelectedSquare(null)
+        boardStore.setMovableSquare([{ x, y }])
+      } else {
+        boardStore.setSelectedSquare(null)
+        boardStore.setMovableSquare([])
+        numStore.addNum()
       }
-      numStore.addNum()
     } else {
       boardStore.setSelectedSquare(null)
       boardStore.setMovableSquare([])
@@ -122,8 +187,8 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="hand opponent-hand">
-    <span v-for="item in filteredOpponentHand" :key="item.piece">
-      <span class="rotated">{{ item.piece }} ×{{ item.count }}</span>
+    <span v-for="item in filteredOpponentHand" :key="item.piece.id">
+      <span class="rotated">{{ item.piece.displayName }} ×{{ item.count }}</span>
     </span>
   </div>
 
@@ -155,19 +220,36 @@ onBeforeUnmount(() => {
             {{ boardStore.myFormation[x][y].displayName }}
           </span>
         </template>
+
+        <div
+          v-if="promotionPending && promoteTarget?.x === x && promoteTarget?.y === y"
+          class="promotion-buttons"
+          @click.stop
+        >
+          <button @click="handlePromotion(true)">成る</button>
+          <button @click="handlePromotion(false)">成らない</button>
+        </div>
       </td>
     </tr>
   </table>
 
   <div class="hand my-hand">
-    <span v-for="item in filteredMyHand" :key="item.piece">
-      {{ item.piece }} ×{{ item.count }}
+    <span
+      v-for="item in filteredMyHand"
+      :key="item.piece.id"
+      :class="{ selected: boardStore.selectedHandPiece === item.piece }"
+      @click="
+        () => {
+          boardStore.setSelectedHandPiece(
+            item.piece === boardStore.selectedHandPiece ? null : item.piece,
+          )
+          boardStore.setSelectedSquare(null)
+          boardStore.setMovableSquare([])
+        }
+      "
+    >
+      {{ item.piece.displayName }} ×{{ item.count }}
     </span>
-  </div>
-
-  <div v-if="promotionPending" class="promotion-dialog">
-    <button @click="handlePromotion(true)">成る</button>
-    <button @click="handlePromotion(false)">成らない</button>
   </div>
 </template>
 <style scoped>
@@ -247,5 +329,33 @@ table {
   font-size: 8px;
   writing-mode: vertical-rl;
   text-orientation: upright;
+}
+
+td {
+  position: relative;
+}
+
+.promotion-buttons {
+  writing-mode: horizontal-tb;
+  position: absolute;
+  top: 5px; /* 少しだけ上に */
+  left: 100%; /* マスの右側に配置 */
+  margin-left: 5px; /* 右に少し余白 */
+  background-color: #fff;
+  border: 1px solid #aaa;
+  padding: 4px;
+  border-radius: 4px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+.my-hand span.selected {
+  background-color: #ffc; /* ハイライト色 */
+  border: 1px solid #aaa;
+  border-radius: 4px;
+  padding: 2px 4px;
 }
 </style>

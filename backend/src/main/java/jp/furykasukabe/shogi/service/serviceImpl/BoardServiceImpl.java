@@ -7,12 +7,18 @@ import org.springframework.stereotype.Service;
 
 import jp.furykasukabe.shogi.bean.Board;
 import jp.furykasukabe.shogi.bean.Piece;
-import jp.furykasukabe.shogi.bean.Square;
 import jp.furykasukabe.shogi.dto.MoveRequest;
+import jp.furykasukabe.shogi.dto.Square;
+import jp.furykasukabe.shogi.entity.PieceInfo;
+import jp.furykasukabe.shogi.repository.PieceRepository;
 import jp.furykasukabe.shogi.service.BoardService;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class BoardServiceImpl implements BoardService {
+	
+	private final PieceRepository pieceRepository;
 
 	@Override
 	public List<Square> findMovableSquare(Board board, Square square) {
@@ -70,28 +76,26 @@ public class BoardServiceImpl implements BoardService {
 		}
 		return lists;
 	}
-	
-	
+
 	@Override
 	public Board advanceOneStep(Board board, MoveRequest moveRequest) {
 		Board nextBoard = board;
 		Piece[][] currentMyFormation = board.getMyFormation();
 		Piece[][] currentOpponentFormation = board.getOpponentFormation();
-		
+
 		int beforeX = moveRequest.getFrom()[0];
 		int beforeY = moveRequest.getFrom()[1];
 		int targetX = moveRequest.getTo()[0];
 		int targetY = moveRequest.getTo()[1];
-		
-		if(currentMyFormation[beforeX][beforeY] != null) {
+
+		if (currentMyFormation[beforeX][beforeY] != null) {
 			currentMyFormation[targetX][targetY] = board.getMyFormation()[beforeX][beforeY];
 			currentMyFormation[beforeX][beforeY] = null;
-			
-			
+
 			nextBoard.setMyFormation(currentMyFormation);
-			
-			if(currentOpponentFormation[targetX][targetY] != null) {
-				board.addMyHand(currentOpponentFormation[targetX][targetY].getName());
+
+			if (currentOpponentFormation[targetX][targetY] != null) {
+				board.addMyHand(currentOpponentFormation[targetX][targetY]);
 				currentOpponentFormation[targetX][targetY] = null;
 				nextBoard.setOpponentFormation(currentOpponentFormation);
 				nextBoard.setMyHand(board.getMyHand());
@@ -101,8 +105,46 @@ public class BoardServiceImpl implements BoardService {
 	}
 
 	@Override
-	public boolean isPromotable(Board board, MoveRequest moverequest) {
+	public boolean isPromotable(Board board, MoveRequest moveRequest) {
+		if (!board.getMyFormation()[moveRequest.getFrom()[0]][moveRequest.getFrom()[1]].isPromoted()) {
+			if (board.getMyFormation()[moveRequest.getFrom()[0]][moveRequest.getFrom()[1]].getPromotedName() != null) {
+				if (moveRequest.getFrom()[1] <= 3 || moveRequest.getTo()[1] <= 3)
+					return true;
+			}
+		}
 		return false;
+	}
+
+	@Override
+	public Board executePromote(Board board, Square square) {
+		Piece[][] myFormation = board.getMyFormation();
+		myFormation[square.getX()][square.getY()].setPromoted(true);
+		board.setMyFormation(myFormation);
+		return board;
+	}
+
+	
+	@Override
+	public List<Square> findDropableSquare(Board board){
+		List<Square> squares = new ArrayList<>();
+		for(int i = 1; i < 10; i++) {
+			for(int j = 1; j < 10; j++) {
+				if(board.getMyFormation()[i][j] == null && board.getOpponentFormation()[i][j] == null) squares.add(new Square(i,j));
+			}
+		}
+		return  squares;
+	}
+	
+	@Override
+	public Board dropPiece(Board board, Piece piece, Square square) {
+		PieceInfo pieceInfo = pieceRepository.findById(piece.getId());
+		Piece rePiece = new Piece(pieceInfo);
+		
+		Piece[][] myFormation = board.getMyFormation();
+		myFormation[square.getX()][square.getY()] = rePiece;
+		board.removeMyHand(rePiece);
+		board.setMyFormation(myFormation);
+		return board;
 	}
 	
 	private List<Square> king(Board board, Square square) {
@@ -331,7 +373,7 @@ public class BoardServiceImpl implements BoardService {
 		return lists;
 
 	}
-	
+
 	private List<Square> bishop(Board board, Square square) {
 		List<Square> lists = new ArrayList<>();
 		int x;
@@ -436,6 +478,7 @@ public class BoardServiceImpl implements BoardService {
 		return lists;
 
 	}
+
 	private List<Square> pawn(Board board, Square square) {
 		List<Square> lists = new ArrayList<>();
 		int x;

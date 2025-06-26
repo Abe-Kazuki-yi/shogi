@@ -11,15 +11,35 @@ import lombok.Data;
 public class Board implements Serializable{
 	private Piece[][] myFormation;
 	private Piece[][] opponentFormation;
-	private Map<String, Integer> myHand;
-	private Map<String, Integer> opponentHand;
+	private Map<Piece, Integer> myHand;
+	private Map<Piece, Integer> opponentHand;
 	private boolean isPlay;
 	
-	public void addMyHand(String pieceName) {
-	    myHand.compute(pieceName, (key, val) -> (val == null) ? 1 : val + 1);
+	public void addMyHand(Piece piece) {
+	    myHand.compute(piece, (key, val) -> (val == null) ? 1 : val + 1);
 	}
 	
-	public void addOpponentHand(String pieceName) {
-	    myHand.compute(pieceName, (key, val) -> (val == null) ? 1 : val + 1);
+	public void addOpponentHand(Piece piece) {
+	    myHand.compute(piece, (key, val) -> (val == null) ? 1 : val + 1);
+	}
+	
+	public void removeMyHand(Piece piece) {
+	    myHand.computeIfPresent(piece, (key, val) -> {
+	        if (val <= 1) {
+	            return null; // nullを返すとエントリが削除される
+	        } else {
+	            return val - 1;
+	        }
+	    });
+	}
+
+	public void removeOpponentHand(Piece piece) {
+	    opponentHand.computeIfPresent(piece, (key, val) -> {
+	        if (val <= 1) {
+	            return null;
+	        } else {
+	            return val - 1;
+	        }
+	    });
 	}
 }

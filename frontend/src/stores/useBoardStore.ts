@@ -6,11 +6,16 @@ interface Piece {
   displayName: string
 }
 
+interface HandPiece {
+  piece: Piece
+  count: number
+}
+
 interface Board {
   myFormation: (Piece | null)[][]
   opponentFormation: (Piece | null)[][]
-  myHand: Record<string, number>
-  opponentHand: Record<string, number>
+  myHand: HandPiece[]
+  opponentHand: HandPiece[]
   isPlay: boolean
 }
 
@@ -18,19 +23,20 @@ export const useBoardStore = defineStore('board', {
   state: () => ({
     myFormation: [] as (Piece | null)[][],
     opponentFormation: [] as (Piece | null)[][],
-    myHand: {} as Record<string, number>,
-    opponentHand: {} as Record<string, number>,
+    myHand: [] as HandPiece[],
+    opponentHand: [] as HandPiece[],
     isPlay: true,
     beforeSquares: [] as Square[],
     targetSquares: [] as Square[],
     selectedSquare: null as Square | null,
     movableSquare: [] as Square[],
+    selectedHandPiece: null as Piece | null,
   }),
   actions: {
     setBoardData(data: Board) {
       this.myFormation = data.myFormation
       this.opponentFormation = data.opponentFormation
-      this.myHand = data.myHand
+      this.myHand = data.myHand // ← サーバーから配列で受け取る前提
       this.opponentHand = data.opponentHand
       this.isPlay = data.isPlay
     },
@@ -45,6 +51,9 @@ export const useBoardStore = defineStore('board', {
     },
     setMovableSquare(sq: Square[]) {
       this.movableSquare = sq
+    },
+    setSelectedHandPiece(piece: Piece | null) {
+      this.selectedHandPiece = piece
     },
   },
 })

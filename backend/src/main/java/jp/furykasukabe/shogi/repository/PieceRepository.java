@@ -7,4 +7,5 @@ import jp.furykasukabe.shogi.entity.PieceInfo;
 
 @Repository
 public interface PieceRepository extends JpaRepository<PieceInfo, Integer> {
+	PieceInfo findById(int id);
 }

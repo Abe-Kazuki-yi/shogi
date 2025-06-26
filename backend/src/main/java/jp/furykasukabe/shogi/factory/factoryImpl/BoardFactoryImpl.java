@@ -25,8 +25,8 @@ public class BoardFactoryImpl implements BoardFactory {
 		List<PieceInfo> pieces = pieceService.findAllPieces();
 		Piece[][] myFormation = new Piece[10][10];
 		Piece[][] opponentFormation = new Piece[10][10];
-		Map<String, Integer> myHand = new HashMap<>();           // ← OK（変更可能）
-		Map<String, Integer> opponentHand = new HashMap<>();
+		Map<Piece, Integer> myHand = new HashMap<>();           // ← OK（変更可能）
+		Map<Piece, Integer> opponentHand = new HashMap<>();
 
 		for (PieceInfo piece : pieces) {
 		    switch (piece.getId()) {
@@ -68,7 +68,7 @@ public class BoardFactoryImpl implements BoardFactory {
 		            break;
 		        case 8:
 		            for (int i = 1; i < 10; i++) {
-		                //myFormation[i][7] = new Piece(piece);
+		                myFormation[i][7] = new Piece(piece);
 		                opponentFormation[i][3] = new Piece(piece);
 		            }
 		            break;
@@ -93,13 +93,13 @@ public class BoardFactoryImpl implements BoardFactory {
 			
 			if(currentBoard.getOpponentFormation()[shogiList.getTargetX()][shogiList.getTargetY()] != null) {
 				Piece[][] nextOpponentFormation = currentBoard.getOpponentFormation();
-				String pieceName = currentBoard.getOpponentFormation()[shogiList.getTargetX()][shogiList.getTargetY()].getName();
+				Piece piece = currentBoard.getOpponentFormation()[shogiList.getTargetX()][shogiList.getTargetY()];
 				
 				nextOpponentFormation[shogiList.getTargetX()][shogiList.getTargetY()] = null;
 				currentBoard.setOpponentFormation(nextOpponentFormation);
 				
-				Map<String, Integer> currentMyHand = currentBoard.getMyHand();
-				currentMyHand.merge(pieceName, 1, Integer::sum);
+				Map<Piece, Integer> currentMyHand = currentBoard.getMyHand();
+				currentMyHand.merge(piece, 1, Integer::sum);
 				currentBoard.setMyHand(currentMyHand);
 			}
 			nextBoard = currentBoard;
