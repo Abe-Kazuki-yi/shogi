@@ -9,4 +9,6 @@ import jp.furykasukabe.shogi.entity.ShogiList;
 public interface ListRepository extends JpaRepository<ShogiList, Integer> {
 
 	List<ShogiList> findByTemplateId(int templateId);
+	
+	List<ShogiList> findByTemplateIdAndNum(int templateId, int num);
 }

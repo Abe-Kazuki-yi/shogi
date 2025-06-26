@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { useTemplateStore } from '@/stores/templateStore'
+import { useTemplateStore } from '@/stores/useTemplateStore'
+import { useGlobalStore } from '@/stores/global'
+import { useBoard } from '@/composables/useBoard'
 
 const store = useTemplateStore()
+const global = useGlobalStore()
+const { getNextBoard } = useBoard()
 </script>
 
 <template>
@@ -11,4 +15,6 @@ const store = useTemplateStore()
       <li v-for="template in store.templates" :key="template.id">{{ template.name }}</li>
     </ul>
   </div>
+  <p>現在の手数: {{ global.turn }}</p>
+  <button @click="getNextBoard">次の手へ</button>
 </template>

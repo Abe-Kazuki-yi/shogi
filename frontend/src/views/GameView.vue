@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import GameList from '@/components/GameList.vue'
+import GameTemplate from '@/components/GameTemplate.vue'
 import TheBoard from '@/components/TheBoard.vue'
-import DIsplayNext from '@/components/DIsplayNext.vue'
 </script>
 
 <template>
   <main>
     <TheBoard />
   </main>
-  <DIsplayNext />
+  <GameTemplate />
+  <GameList />
 </template>

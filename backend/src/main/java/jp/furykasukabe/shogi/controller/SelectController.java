@@ -13,15 +13,15 @@ import jp.furykasukabe.shogi.repository.TemplateRepository;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/start")
+@RequestMapping("/select")
 @CrossOrigin
 @RequiredArgsConstructor
-public class StartController {
+public class SelectController {
 
 	private final TemplateRepository templateRepository;
 	
 	@GetMapping("/{playerId}/{playFirst}")
 	public List<Template> getTemplate(@PathVariable int playerId, @PathVariable boolean playFirst) {
-		return templateRepository.findByPlayerIdAndPlayFirst(playerId, playFirst);
+		return templateRepository.findByPlayerIdAndPlayFirstAndAvailable(playerId, playFirst, true);
 	}
 }
